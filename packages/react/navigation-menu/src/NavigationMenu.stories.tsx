@@ -1,4 +1,3 @@
-import type { Meta, StoryObj } from '@storybook/react';
 import * as React from 'react';
 import * as NavigationMenu from '@radix-ui/react-navigation-menu';
 import { DirectionProvider } from '@radix-ui/react-direction';
