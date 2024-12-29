@@ -4,37 +4,7 @@ import * as NavigationMenu from '@radix-ui/react-navigation-menu';
 import { DirectionProvider } from '@radix-ui/react-direction';
 import { css, keyframes } from '../../../../stitches.config';
 
-// export default { title: 'Components/NavigationMenu' };
-
-type PagePropsAndCustomArgs = React.ComponentProps<typeof NavigationMenu.NavigationMenu> & {
-  footer?: string;
-};
-
-const meta: Meta<PagePropsAndCustomArgs> = {
-  title: 'Components/NavigationMenu',
-  component: NavigationMenu.NavigationMenu,
-  argTypes: {
-    uiMode: {
-      options: ['hover', 'click'],
-      control: { type: 'radio' },
-    },
-  },
-
-  render: ({ uiMode, ...args }) => (
-    <NavigationMenu.NavigationMenu {...args} uiMode={uiMode}>
-      <footer>{uiMode}</footer>
-    </NavigationMenu.NavigationMenu>
-  ),
-};
-export default meta;
-
-type Story = StoryObj<PagePropsAndCustomArgs>;
-
-export const CustomFooter: Story = {
-  args: {
-    footer: 'Built with Storybook',
-  },
-};
+export default { title: 'Components/NavigationMenu' };
 
 export const Basic = () => {
   return (

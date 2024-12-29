@@ -188,6 +188,29 @@ const NavigationMenu = React.forwardRef<NavigationMenuElement, NavigationMenuPro
       };
     }, []);
 
+    const isClickMode = uiMode === 'click';
+    const isOpen = value !== '';
+
+    const onHoverBehavior = {
+      onTriggerEnter: (itemValue: string) => {
+        window.clearTimeout(openTimerRef.current);
+        if (isClickMode && !isOpen) return;
+        if (isOpenDelayed) {
+          handleDelayedOpen(itemValue);
+        } else {
+          handleOpen(itemValue);
+        }
+      },
+      onTriggerLeave: () => {
+        window.clearTimeout(openTimerRef.current);
+        if (!isClickMode) startCloseTimer();
+      },
+      onContentEnter: () => window.clearTimeout(closeTimerRef.current),
+      onContentLeave: () => {
+        if (!isClickMode) startCloseTimer();
+      },
+    };
+
     return (
       <NavigationMenuProvider
         scope={__scopeNavigationMenu}
@@ -196,17 +219,7 @@ const NavigationMenu = React.forwardRef<NavigationMenuElement, NavigationMenuPro
         dir={direction}
         orientation={orientation}
         rootNavigationMenu={navigationMenu}
-        onTriggerEnter={(itemValue) => {
-          window.clearTimeout(openTimerRef.current);
-          if (isOpenDelayed) handleDelayedOpen(itemValue);
-          else handleOpen(itemValue);
-        }}
-        onTriggerLeave={() => {
-          window.clearTimeout(openTimerRef.current);
-          startCloseTimer();
-        }}
-        onContentEnter={() => window.clearTimeout(closeTimerRef.current)}
-        onContentLeave={startCloseTimer}
+        {...onHoverBehavior}
         onItemSelect={(itemValue) => {
           setValue((prevValue) => (prevValue === itemValue ? '' : itemValue));
         }}
@@ -506,37 +519,39 @@ const NavigationMenuTrigger = React.forwardRef<
   const wasClickCloseRef = React.useRef(false);
   const open = itemContext.value === context.value;
 
-  const onHoverBehavior =
-    context.uiMode !== 'click'
-      ? {
-          onPointerEnter: composeEventHandlers(props.onPointerEnter, () => {
-            wasClickCloseRef.current = false;
-            itemContext.wasEscapeCloseRef.current = false;
-          }),
-          onPointerMove: composeEventHandlers(
-            props.onPointerMove,
-            whenMouse(() => {
-              if (
-                disabled ||
-                wasClickCloseRef.current ||
-                itemContext.wasEscapeCloseRef.current ||
-                hasPointerMoveOpenedRef.current
-              )
-                return;
-              context.onTriggerEnter(itemContext.value);
-              hasPointerMoveOpenedRef.current = true;
-            })
-          ),
-          onPointerLeave: composeEventHandlers(
-            props.onPointerLeave,
-            whenMouse(() => {
-              if (disabled) return;
-              context.onTriggerLeave();
-              hasPointerMoveOpenedRef.current = false;
-            })
-          ),
-        }
-      : {};
+  const { uiMode = 'hover' } = context;
+  const isClickMode = uiMode === 'click';
+
+  const onHoverBehavior = {
+    onPointerEnter: composeEventHandlers(props.onPointerEnter, () => {
+      wasClickCloseRef.current = false;
+      itemContext.wasEscapeCloseRef.current = false;
+    }),
+    onPointerMove: composeEventHandlers(
+      props.onPointerMove,
+      whenMouse(() => {
+        if (
+          disabled ||
+          wasClickCloseRef.current ||
+          itemContext.wasEscapeCloseRef.current ||
+          hasPointerMoveOpenedRef.current
+        )
+          return;
+        context.onTriggerEnter(itemContext.value);
+        hasPointerMoveOpenedRef.current = true;
+      })
+    ),
+    onPointerLeave: isClickMode
+      ? undefined
+      : composeEventHandlers(
+          props.onPointerLeave,
+          whenMouse(() => {
+            if (disabled) return;
+            context.onTriggerLeave();
+            hasPointerMoveOpenedRef.current = false;
+          })
+        ),
+  };
 
   console.log(`uiMode: ${context.uiMode} onHoverBehavior: %o`, onHoverBehavior);
   return (
