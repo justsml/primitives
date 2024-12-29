@@ -49,6 +49,11 @@ type ContentData = {
 type NavigationMenuContextValue = {
   isRootMenu: boolean;
   value: string;
+  /**
+   * The interaction mode of the navigation menu. Defaults to 'hover'.
+   */
+  uiMode?: 'hover' | 'click';
+
   previousValue: string;
   baseId: string;
   dir: Direction;
@@ -83,6 +88,11 @@ interface NavigationMenuProps
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
+  /**
+   * The interaction mode of the navigation menu. Defaults to 'hover'.
+   */
+  uiMode?: 'hover' | 'click';
+
   dir?: Direction;
   orientation?: Orientation;
   /**
@@ -108,6 +118,7 @@ const NavigationMenu = React.forwardRef<NavigationMenuElement, NavigationMenuPro
       skipDelayDuration = 300,
       orientation = 'horizontal',
       dir,
+      uiMode,
       ...NavigationMenuProps
     } = props;
     const [navigationMenu, setNavigationMenu] = React.useState<NavigationMenuElement | null>(null);
@@ -200,6 +211,7 @@ const NavigationMenu = React.forwardRef<NavigationMenuElement, NavigationMenuPro
           setValue((prevValue) => (prevValue === itemValue ? '' : itemValue));
         }}
         onItemDismiss={() => setValue('')}
+        uiMode={uiMode}
       >
         <Primitive.nav
           aria-label="Main"
@@ -285,6 +297,10 @@ interface NavigationMenuProviderPrivateProps {
   onContentLeave?(): void;
   onItemSelect(itemValue: string): void;
   onItemDismiss(): void;
+  /**
+   * The interaction mode of the navigation menu. Defaults to 'hover'.
+   */
+  uiMode?: 'hover' | 'click';
 }
 
 interface NavigationMenuProviderProps extends NavigationMenuProviderPrivateProps {}
@@ -306,6 +322,7 @@ const NavigationMenuProvider: React.FC<NavigationMenuProviderProps> = (
     onTriggerLeave,
     onContentEnter,
     onContentLeave,
+    uiMode,
   } = props;
   const [viewport, setViewport] = React.useState<NavigationMenuViewportElement | null>(null);
   const [viewportContent, setViewportContent] = React.useState<Map<string, ContentData>>(new Map());
@@ -317,6 +334,7 @@ const NavigationMenuProvider: React.FC<NavigationMenuProviderProps> = (
       isRootMenu={isRootMenu}
       rootNavigationMenu={rootNavigationMenu}
       value={value}
+      uiMode={uiMode}
       previousValue={usePrevious(value)}
       baseId={useId()}
       dir={dir}
@@ -488,6 +506,39 @@ const NavigationMenuTrigger = React.forwardRef<
   const wasClickCloseRef = React.useRef(false);
   const open = itemContext.value === context.value;
 
+  const onHoverBehavior =
+    context.uiMode !== 'click'
+      ? {
+          onPointerEnter: composeEventHandlers(props.onPointerEnter, () => {
+            wasClickCloseRef.current = false;
+            itemContext.wasEscapeCloseRef.current = false;
+          }),
+          onPointerMove: composeEventHandlers(
+            props.onPointerMove,
+            whenMouse(() => {
+              if (
+                disabled ||
+                wasClickCloseRef.current ||
+                itemContext.wasEscapeCloseRef.current ||
+                hasPointerMoveOpenedRef.current
+              )
+                return;
+              context.onTriggerEnter(itemContext.value);
+              hasPointerMoveOpenedRef.current = true;
+            })
+          ),
+          onPointerLeave: composeEventHandlers(
+            props.onPointerLeave,
+            whenMouse(() => {
+              if (disabled) return;
+              context.onTriggerLeave();
+              hasPointerMoveOpenedRef.current = false;
+            })
+          ),
+        }
+      : {};
+
+  console.log(`uiMode: ${context.uiMode} onHoverBehavior: %o`, onHoverBehavior);
   return (
     <>
       <Collection.ItemSlot scope={__scopeNavigationMenu} value={itemContext.value}>
@@ -501,32 +552,7 @@ const NavigationMenuTrigger = React.forwardRef<
             aria-controls={contentId}
             {...triggerProps}
             ref={composedRefs}
-            onPointerEnter={composeEventHandlers(props.onPointerEnter, () => {
-              wasClickCloseRef.current = false;
-              itemContext.wasEscapeCloseRef.current = false;
-            })}
-            onPointerMove={composeEventHandlers(
-              props.onPointerMove,
-              whenMouse(() => {
-                if (
-                  disabled ||
-                  wasClickCloseRef.current ||
-                  itemContext.wasEscapeCloseRef.current ||
-                  hasPointerMoveOpenedRef.current
-                )
-                  return;
-                context.onTriggerEnter(itemContext.value);
-                hasPointerMoveOpenedRef.current = true;
-              })
-            )}
-            onPointerLeave={composeEventHandlers(
-              props.onPointerLeave,
-              whenMouse(() => {
-                if (disabled) return;
-                context.onTriggerLeave();
-                hasPointerMoveOpenedRef.current = false;
-              })
-            )}
+            {...onHoverBehavior}
             onClick={composeEventHandlers(props.onClick, () => {
               context.onItemSelect(itemContext.value);
               wasClickCloseRef.current = open;
@@ -552,7 +578,7 @@ const NavigationMenuTrigger = React.forwardRef<
           <VisuallyHiddenPrimitive.Root
             aria-hidden
             tabIndex={0}
-            ref={itemContext.focusProxyRef}
+            ref={itemContext.focusProxyRef as React.Ref<HTMLSpanElement>}
             onFocus={(event) => {
               const content = itemContext.contentRef.current;
               const prevFocusedElement = event.relatedTarget as HTMLElement | null;

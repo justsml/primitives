@@ -1,9 +1,40 @@
+import type { Meta, StoryObj } from '@storybook/react';
 import * as React from 'react';
 import * as NavigationMenu from '@radix-ui/react-navigation-menu';
 import { DirectionProvider } from '@radix-ui/react-direction';
 import { css, keyframes } from '../../../../stitches.config';
 
-export default { title: 'Components/NavigationMenu' };
+// export default { title: 'Components/NavigationMenu' };
+
+type PagePropsAndCustomArgs = React.ComponentProps<typeof NavigationMenu.NavigationMenu> & {
+  footer?: string;
+};
+
+const meta: Meta<PagePropsAndCustomArgs> = {
+  title: 'Components/NavigationMenu',
+  component: NavigationMenu.NavigationMenu,
+  argTypes: {
+    uiMode: {
+      options: ['hover', 'click'],
+      control: { type: 'radio' },
+    },
+  },
+
+  render: ({ uiMode, ...args }) => (
+    <NavigationMenu.NavigationMenu {...args} uiMode={uiMode}>
+      <footer>{uiMode}</footer>
+    </NavigationMenu.NavigationMenu>
+  ),
+};
+export default meta;
+
+type Story = StoryObj<PagePropsAndCustomArgs>;
+
+export const CustomFooter: Story = {
+  args: {
+    footer: 'Built with Storybook',
+  },
+};
 
 export const Basic = () => {
   return (
@@ -86,6 +117,41 @@ export const CustomDurations = () => {
 
       <h2>Custom (2000ms to move from one trigger to another)</h2>
       <DurationNavigation delayDuration={500} skipDelayDuration={2000} />
+    </div>
+  );
+};
+
+export const ClickDurations = () => {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: '#e5e8eb',
+        paddingBottom: 150,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}
+    >
+      <h1>Click mode &amp; Delay duration</h1>
+      <h2>Default (200ms)</h2>
+      <ClickNavigation uiMode="click" />
+
+      <h2>Custom (0ms = instant open)</h2>
+      <ClickNavigation uiMode="click" delayDuration={0} />
+
+      <h2>Custom (700ms)</h2>
+      <ClickNavigation uiMode="click" delayDuration={700} />
+
+      <h1 style={{ marginTop: 50 }}>Skip delay duration</h1>
+      <h2>Default (300ms to move from one trigger to another)</h2>
+      <ClickNavigation uiMode="click" />
+
+      <h2>Custom (0ms to move from one trigger to another = never skip)</h2>
+      <ClickNavigation uiMode="click" skipDelayDuration={0} />
+
+      <h2>Custom (2000ms to move from one trigger to another)</h2>
+      <ClickNavigation uiMode="click" delayDuration={500} skipDelayDuration={2000} />
     </div>
   );
 };
@@ -426,6 +492,61 @@ const StoryFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const DurationNavigation = React.forwardRef<
+  React.ElementRef<typeof NavigationMenu.Root>,
+  React.ComponentProps<typeof NavigationMenu.Root>
+>((props, forwardedRef) => {
+  return (
+    <NavigationMenu.Root
+      {...props}
+      style={{ backgroundColor: 'white', borderRadius: 500, padding: '2px 12px', ...props.style }}
+      ref={forwardedRef}
+    >
+      <NavigationMenu.List className={mainListClass()}>
+        <NavigationMenu.Item className={expandableItemClass()}>
+          <TriggerWithIndicator>Products</TriggerWithIndicator>
+          <NavigationMenu.Content className={basicContentClass()}>
+            <LinkGroup
+              bordered={false}
+              items={['Fusce pellentesque', 'Aliquam porttitor', 'Pellentesque']}
+            />
+          </NavigationMenu.Content>
+        </NavigationMenu.Item>
+
+        <NavigationMenu.Item className={expandableItemClass()}>
+          <TriggerWithIndicator>Company</TriggerWithIndicator>
+          <NavigationMenu.Content className={basicContentClass()}>
+            <LinkGroup
+              bordered={false}
+              items={['Fusce pellentesque', 'Aliquam porttitor', 'Pellentesque']}
+            />
+          </NavigationMenu.Content>
+        </NavigationMenu.Item>
+
+        <NavigationMenu.Item className={expandableItemClass()}>
+          <TriggerWithIndicator>Developers</TriggerWithIndicator>
+          <NavigationMenu.Content className={basicContentClass()}>
+            <LinkGroup
+              bordered={false}
+              items={['Fusce pellentesque', 'Aliquam porttitor', 'Pellentesque']}
+            />
+          </NavigationMenu.Content>
+        </NavigationMenu.Item>
+
+        <NavigationMenu.Item className={expandableItemClass()}>
+          <TriggerWithIndicator>About</TriggerWithIndicator>
+          <NavigationMenu.Content className={basicContentClass()}>
+            <LinkGroup
+              bordered={false}
+              items={['Fusce pellentesque', 'Aliquam porttitor', 'Pellentesque']}
+            />
+          </NavigationMenu.Content>
+        </NavigationMenu.Item>
+      </NavigationMenu.List>
+    </NavigationMenu.Root>
+  );
+});
+
+const ClickNavigation = React.forwardRef<
   React.ElementRef<typeof NavigationMenu.Root>,
   React.ComponentProps<typeof NavigationMenu.Root>
 >((props, forwardedRef) => {
